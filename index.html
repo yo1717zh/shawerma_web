@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>QR Шаурма — покроково</title>
+  <meta name="theme-color" content="#0f172a">
+  <style>
+    :root {
+      --bg:#f5f7fb; --card:#ffffff; --text:#0f172a; --muted:#64748b; --line:#dde5ee;
+      --primary:#0f766e; --primary-2:#14b8a6; --primary-soft:#ccfbf1; --danger:#b91c1c;
+      --ok:#166534; --shadow:0 20px 50px rgba(15,23,42,.08); --radius:24px;
+    }
+    * { box-sizing:border-box; }
+    html,body { margin:0; padding:0; background:linear-gradient(180deg,#f7fafc 0%,#edf4f7 100%); color:var(--text); font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; }
+    body { min-height:100dvh; }
+    .shell { max-width:980px; margin:0 auto; padding:24px 16px 56px; }
+    .hero { margin-bottom:18px; }
+    .eyebrow { display:inline-flex; align-items:center; gap:8px; background:rgba(20,184,166,.12); color:#0f766e; padding:8px 12px; border-radius:999px; font-weight:700; font-size:13px; }
+    h1 { margin:14px 0 8px; font-size:clamp(34px,5vw,56px); line-height:1.02; letter-spacing:-.03em; }
+    .lead { color:var(--muted); font-size:16px; max-width:62ch; }
+    .layout { display:grid; gap:18px; }
+    @media (min-width: 980px) { .layout { grid-template-columns: 1.05fr .95fr; align-items:start; } }
+    .card { background:rgba(255,255,255,.88); backdrop-filter:blur(14px); border:1px solid rgba(255,255,255,.7); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+    .card-inner { padding:18px; }
+    .steps { display:flex; gap:10px; padding:18px 18px 0; flex-wrap:wrap; }
+    .step-pill { min-width:44px; height:44px; padding:0 14px; border-radius:999px; display:flex; align-items:center; justify-content:center; background:#eef2f7; color:var(--muted); font-weight:800; transition:all .28s ease; }
+    .step-pill.active { background:linear-gradient(135deg,var(--primary),var(--primary-2)); color:#fff; transform:translateY(-1px); }
+    .step-pill.done { background:#dcfce7; color:#166534; }
+    .panel { display:none; animation:fade .28s ease; }
+    .panel.active { display:block; }
+    @keyframes fade { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+    .label { display:block; margin:0 0 10px; font-size:14px; font-weight:800; }
+    input, select { width:100%; min-height:56px; border:1px solid var(--line); border-radius:18px; padding:14px 16px; font-size:18px; background:#fff; color:var(--text); outline:none; transition:border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+    input:focus, select:focus { border-color:rgba(15,118,110,.45); box-shadow:0 0 0 5px rgba(20,184,166,.12); }
+    .meta { margin-top:14px; padding:16px; border-radius:20px; background:linear-gradient(180deg,#f8fafc 0%,#f1f5f9 100%); border:1px solid #e5edf4; }
+    .meta-row { margin:8px 0; line-height:1.5; }
+    .muted { color:var(--muted); }
+    .big { font-size:24px; font-weight:800; letter-spacing:-.02em; }
+    .nav { display:flex; gap:12px; margin-top:18px; flex-wrap:wrap; }
+    button { appearance:none; border:0; min-height:54px; border-radius:18px; padding:14px 18px; font-size:16px; font-weight:800; cursor:pointer; transition:transform .2s ease, opacity .2s ease, box-shadow .2s ease; }
+    button:hover { transform:translateY(-1px); }
+    button:active { transform:translateY(0); }
+    .btn-primary { background:linear-gradient(135deg,var(--primary),var(--primary-2)); color:#fff; box-shadow:0 12px 24px rgba(15,118,110,.22); }
+    .btn-soft { background:#eefbf9; color:#0f766e; }
+    .btn-ghost { background:#f8fafc; color:var(--text); border:1px solid var(--line); }
+    .btn-danger { background:#fff1f2; color:#be123c; }
+    .hint { margin-top:10px; font-size:13px; color:var(--muted); }
+    .search-wrap { position:relative; }
+    .suggestions { position:absolute; z-index:20; top:calc(100% + 8px); left:0; right:0; background:#fff; border:1px solid #e5edf4; border-radius:18px; box-shadow:0 20px 40px rgba(15,23,42,.12); max-height:280px; overflow:auto; display:none; }
+    .suggestions.show { display:block; }
+    .s-item { padding:12px 14px; border-bottom:1px solid #eef2f7; cursor:pointer; }
+    .s-item:last-child { border-bottom:0; }
+    .s-item:hover { background:#f8fafc; }
+    .s-code { font-weight:800; }
+    .summary-card { padding:18px; }
+    .summary-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+    .badge { display:inline-flex; align-items:center; gap:8px; border-radius:999px; background:#ecfeff; color:#155e75; padding:8px 12px; font-size:13px; font-weight:800; }
+    .qr-frame { background:#fff; border-radius:28px; border:1px solid #e8eef5; padding:16px; min-height:360px; display:grid; place-items:center; }
+    #qrcode canvas { width:min(100%,320px); height:auto; display:block; }
+    .result-block { margin-top:16px; padding:16px; background:#f8fafc; border:1px solid #e5edf4; border-radius:20px; }
+    .status { min-height:24px; margin-top:12px; font-weight:700; font-size:14px; }
+    .status.error { color:var(--danger); }
+    .status.ok { color:var(--ok); }
+    .hidden { display:none !important; }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div class="eyebrow">Покрокове формування палети</div>
+      <h1>QR Шаурма</h1>
+      <div class="lead">Форма працює по кроках: оберіть артикул готової продукції, дату виробництва, кількість втулок та зміну. Зробіть скріншот отриманого QR-коду.</div>
+    </section>
+
+    <section class="layout">
+      <div class="card">
+        <div class="steps">
+          <div class="step-pill active" data-step-pill="1">1</div>
+          <div class="step-pill" data-step-pill="2">2</div>
+          <div class="step-pill" data-step-pill="3">3</div>
+          <div class="step-pill" data-step-pill="4">4</div>
+          <div class="step-pill" data-step-pill="5">5</div>
+        </div>
+        <div class="card-inner">
+          <div class="panel active" data-step="1">
+            <label class="label" for="articleInput">Крок 1. Артикул готової продукції</label>
+            <div class="search-wrap">
+              <input id="articleInput" type="text" inputmode="numeric" autocomplete="off" placeholder="Введіть артикул ГП">
+              <div id="suggestions" class="suggestions"></div>
+            </div>
+            <div class="meta" id="articleMeta">
+              <div class="muted">Введіть артикул або оберіть зі списку.</div>
+            </div>
+            <div class="nav">
+              <button class="btn-primary" id="toStep2" disabled>Далі до дати</button>
+            </div>
+          </div>
+
+          <div class="panel" data-step="2">
+            <label class="label" for="prodDate">Крок 2. Дата виробництва</label>
+            <input id="prodDate" type="date">
+            <div class="meta" id="dateMeta"></div>
+            <div class="nav">
+              <button class="btn-ghost" data-back="1">Назад</button>
+              <button class="btn-primary" id="toStep3">Далі до втулок</button>
+            </div>
+          </div>
+
+          <div class="panel" data-step="3">
+            <label class="label" for="spoolsInput">Крок 3. Кількість втулок</label>
+            <input id="spoolsInput" type="number" min="1" step="1" placeholder="Наприклад 10">
+
+            <div class="meta" id="spoolMeta"></div>
+            <div class="nav">
+              <button class="btn-ghost" data-back="2">Назад</button>
+              <button class="btn-primary" id="toStep4">Далі до зміни</button>
+            </div>
+          </div>
+
+          <div class="panel" data-step="4">
+            <label class="label" for="shiftSelect">Крок 4. Зміна</label>
+            <select id="shiftSelect">
+              <option value="A">Зміна А</option>
+              <option value="B">Зміна Б</option>
+            </select>
+            <div class="meta" id="shiftMeta"></div>
+            <div class="nav">
+              <button class="btn-ghost" data-back="3">Назад</button>
+              <button class="btn-primary" id="generateBtn">Генерувати код</button>
+            </div>
+          </div>
+
+          <div class="panel" data-step="5">
+            <label class="label">Готово</label>
+            <div class="status" id="status"></div>
+            <div class="muted" style="margin-top:8px;font-weight:700;">Готово, зробіть скріншот.</div>
+            <div class="nav">
+              <button class="btn-primary" id="telegramBtn">Група Telegram Шаурма</button>
+              
+              
+              
+              <button class="btn-danger" id="resetBtn">Нова палета</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="card">
+        <div class="summary-card">
+          <div class="summary-head">
+            <div>
+              <div class="badge">Підсумок</div>
+              <div class="muted" style="margin-top:8px;">QR-рядок і повідомлення формуються після проходження всіх кроків.</div>
+            </div>
+          </div>
+          <div class="qr-frame"><div id="qrcode"></div></div>
+          <div class="result-block">
+            <div class="muted">QR зі значенням</div>
+            <div id="qrValue" style="margin-top:6px;font-weight:800;word-break:break-word;"></div>
+          </div>
+          <div class="result-block">
+            <div class="muted">Повідомлення</div>
+            <div id="msgValue" style="margin-top:6px;white-space:pre-wrap;"></div>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const PRODUCTS = [
+  {
+    "article": "7363",
+    "raw": "39254",
+    "description": "М'ясо кур-бр для виготовлення шаурми н/ф кулін зам BF (г/в 25 кг, г/л 25 кг, Куратор)",
+    "ceh": "",
+    "pcsweight": 25.0
+  },
+  {
+    "article": "11024",
+    "raw": "42722",
+    "description": "М'ясо кур-бр для виготовлення шаурми н/ф кулін зам BF (г/в 10 кг, г/л 20 кг, Куратор)",
+    "ceh": "",
+    "pcsweight": 10.0
+  },
+  {
+    "article": "7664",
+    "raw": "39964",
+    "description": "М’ясо ніжки кур-бр для виготовлення шаурми \"Фірмове\" н/ф кулін зам BF (г/в 25 кг, г/л 25 кг, Куратор)",
+    "ceh": "",
+    "pcsweight": 25.0
+  },
+  {
+    "article": "7630",
+    "raw": "39852",
+    "description": "М'ясо кур-бр для виготовлення шаурми \"Гурман\" н/ф кулін зам BF (г/в 25 кг, г/л 25 кг, Куратор)",
+    "ceh": "",
+    "pcsweight": 25.0
+  },
+  {
+    "article": "7491",
+    "raw": "39512",
+    "description": "М'ясо кур-бр для виготовлення шаурми \"Гурман\" н/ф кулін зам BF (г/в 10 кг, г/л 20 кг, Куратор)",
+    "ceh": "",
+    "pcsweight": 10.0
+  },
+  {
+    "article": "7472",
+    "raw": "39434",
+    "description": "М'ясо кур-бр для виготовлення шаурми \"Гурман\" н/ф кулін зам BF (г/в 5 кг, г/л 15 кг, Куратор)",
+    "ceh": "",
+    "pcsweight": 5.0
+  },
+  {
+    "article": "11576",
+    "raw": "43907",
+    "description": "М'ясо кур-бр для виготовлення шаурми \"Гурман\" н/ф кулін зам BF (г/в 15 кг, г/л 15 кг, Куратор)",
+    "ceh": "",
+    "pcsweight": 15.0
+  },
+  {
+    "article": "7492",
+    "raw": "39511",
+    "description": "М’ясо ніжки кур-бр для виготовлення шаурми \"Класік\" н/ф кулін зам BF (г/в 10 кг, г/л 20 кг, Куратор)",
+    "ceh": "",
+    "pcsweight": 10.0
+  },
+  {
+    "article": "7471",
+    "raw": "39433",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Класік\" н/ф кулін зам BF (г/в 5 кг, г/л 15 кг, Куратор)",
+    "ceh": "",
+    "pcsweight": 5.0
+  },
+  {
+    "article": "7629",
+    "raw": "39853",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Класік\" н/ф кулін зам BF (г/в 25 кг, г/л 25 кг, Куратор)",
+    "ceh": "",
+    "pcsweight": 25.0
+  },
+  {
+    "article": "12048",
+    "raw": "44071",
+    "description": "М'ясо кур-бр для виготовлення шаурми \"Донер Смак\" н/ф кулін зам BF (г/в 25 кг, г/л 25 кг)",
+    "ceh": "",
+    "pcsweight": 25.0
+  },
+  {
+    "article": "12049",
+    "raw": "39853",
+    "description": "М'ясо ніжки кур-бр для виготовленння шаурми \"Класік\" н/ф кулін зам BF (г/в 25 кг, г/л 25 кг)",
+    "ceh": "",
+    "pcsweight": 25.0
+  },
+  {
+    "article": "12480",
+    "raw": "48626",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Класік\" н/ф кулін зам BF (г/в 5 кг, г/л 15 кг, Qualiko, CeA)",
+    "ceh": "",
+    "pcsweight": 5.0
+  },
+  {
+    "article": "12988",
+    "raw": "51348",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Класік\" н/ф кулін зам BF (г/в 5 кг, г/л 15 кг, Qualiko, Africa)",
+    "ceh": "",
+    "pcsweight": 5.0
+  },
+  {
+    "article": "12481",
+    "raw": "48627",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Класік\" н/ф кулін зам BF (г/в 10 кг, г/л 20 кг, Qualiko, CeA)",
+    "ceh": "",
+    "pcsweight": 10.0
+  },
+  {
+    "article": "12482",
+    "raw": "48628",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Класік\" н/ф кулін зам BF (г/в 25 кг, г/л 25 кг, Qualiko, CeA)",
+    "ceh": "",
+    "pcsweight": 25.0
+  },
+  {
+    "article": "12548",
+    "raw": "49111",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Класік\" н/ф кулін зам BF (г/в 20 кг, г/л 20 кг, Qualiko, CeA)",
+    "ceh": "",
+    "pcsweight": 20.0
+  },
+  {
+    "article": "13322",
+    "raw": "51450",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Класік\" н/ф кулін зам BF (г/в 15 кг, г/л 15 кг, Qualiko, CeA)",
+    "ceh": "",
+    "pcsweight": 15.0
+  },
+  {
+    "article": "12558",
+    "raw": "49115",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Класік\" н/ф кулін зам BF (г/в 25 кг, г/л 25 кг, Qualiko, ЄС)",
+    "ceh": "",
+    "pcsweight": 25.0
+  },
+  {
+    "article": "10626",
+    "raw": "42220",
+    "description": "М'ясо кур-бр для виготовлення шаурми \"Arabic Spice Mix\" н/ф кулін зам BF (г/в 5 кг, г/л 15 кг, Qualiko, East)",
+    "ceh": "",
+    "pcsweight": 5.0
+  },
+  {
+    "article": "10627",
+    "raw": "42221",
+    "description": "М'ясо кур-бр для виготовлення шаурми \"Arabic Spice Mix\" н/ф кулін зам BF (г/в 10 кг, г/л 20 кг, Qualiko, East)",
+    "ceh": "",
+    "pcsweight": 10.0
+  },
+  {
+    "article": "10621",
+    "raw": "42222",
+    "description": "М'ясо кур-бр для виготовлення шаурми \"Arabic Spice Mix\" н/ф кулін зам BF (г/в 20 кг, г/л 20 кг, Qualiko, East)",
+    "ceh": "",
+    "pcsweight": 20.0
+  },
+  {
+    "article": "10618",
+    "raw": "42224",
+    "description": "М'ясо кур-бр для виготовлення шаурми \"Indian Spice Mix\" н/ф кулін зам BF (г/в 5 кг, г/л 15 кг, Qualiko, East)",
+    "ceh": "",
+    "pcsweight": 5.0
+  },
+  {
+    "article": "10623",
+    "raw": "42225",
+    "description": "М'ясо кур-бр для виготовлення шаурми \"Indian Spice Mix\" н/ф кулін зам BF (г/в 10 кг, г/л 20 кг, Qualiko, East)",
+    "ceh": "",
+    "pcsweight": 10.0
+  },
+  {
+    "article": "10624",
+    "raw": "42226",
+    "description": "М'ясо кур-бр для виготовлення шаурми \"Indian Spice Mix\" н/ф кулін зам BF (г/в 20 кг, г/л 20 кг, Qualiko, East)",
+    "ceh": "",
+    "pcsweight": 20.0
+  },
+  {
+    "article": "10904",
+    "raw": "42473",
+    "description": "М'ясо кур-бр для виготовлення шаурми \"Донер Смак\" н/ф кулін зам BF (г/в 5 кг, г/л 15 кг, Куратор)",
+    "ceh": "",
+    "pcsweight": 5.0
+  },
+  {
+    "article": "10903",
+    "raw": "42474",
+    "description": "М'ясо кур-бр для виготовлення шаурми \"Донер Смак\" н/ф кулін зам BF (г/в 10 кг, г/л 20 кг, Куратор)",
+    "ceh": "",
+    "pcsweight": 10.0
+  },
+  {
+    "article": "10902",
+    "raw": "42475",
+    "description": "М'ясо кур-бр для виготовлення шаурми \"Донер Смак\" н/ф кулін зам BF (г/в 15 кг, г/л 15 кг, Куратор)",
+    "ceh": "",
+    "pcsweight": 15.0
+  },
+  {
+    "article": "11597",
+    "raw": "44071",
+    "description": "М'ясо кур-бр для виготовлення шаурми \"Донер Смак\" н/ф кулін зам BF (г/в 25 кг, г/л 25 кг, Куратор)",
+    "ceh": "",
+    "pcsweight": 25.0
+  },
+  {
+    "article": "13014",
+    "raw": "50541",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Degirmen\" н/ф кулін зам BF (г/в 10 кг, г/л 20 кг, Qualiko, СНД)",
+    "ceh": "",
+    "pcsweight": 10.0
+  },
+  {
+    "article": "13016",
+    "raw": "50542",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Degirmen\" н/ф кулін зам BF (г/в 15 кг, г/л 15 кг, Qualiko, СНД)",
+    "ceh": "",
+    "pcsweight": 15.0
+  },
+  {
+    "article": "12847",
+    "raw": "49779",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Degirmen\" н/ф кулін зам BF (г/в 20 кг, г/л 20 кг, Qualiko, СНД)",
+    "ceh": "",
+    "pcsweight": 20.0
+  },
+  {
+    "article": "13015",
+    "raw": "50543",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Degirmen\" н/ф кулін зам BF (г/в 25 кг, г/л 25 кг, Qualiko, СНД)",
+    "ceh": "",
+    "pcsweight": 25.0
+  },
+  {
+    "article": "13011",
+    "raw": "50229",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Kebab EU\" н/ф кулін зам BF (г/в 15 кг, г/л 15 кг, Qualiko, ЄС)",
+    "ceh": "",
+    "pcsweight": 15.0
+  },
+  {
+    "article": "13293",
+    "raw": "51807",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Kebab EU\" н/ф кулін зам BF (г/в 20 кг, г/л 20 кг, Qualiko, ЄС)",
+    "ceh": "",
+    "pcsweight": 20.0
+  },
+  {
+    "article": "13312",
+    "raw": "51808",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Kebab EU\" н/ф кулін зам BF (г/в 25 кг, г/л 25 кг, Qualiko, ЄС)",
+    "ceh": "",
+    "pcsweight": 25.0
+  },
+  {
+    "article": "13474",
+    "raw": "33132",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"D&G\" н/ф кулін зам BF (г/в 10 кг, г/л 20 кг, Qualiko, East)",
+    "ceh": "",
+    "pcsweight": 10.0
+  },
+  {
+    "article": "13475",
+    "raw": "33133",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"D&G\" н/ф кулін зам BF (г/в 15 кг, г/л 15 кг, Qualiko, East)",
+    "ceh": "",
+    "pcsweight": 15.0
+  },
+  {
+    "article": "13476",
+    "raw": "33134",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"D&G\" н/ф кулін зам BF (г/в 20 кг, г/л 20 кг, Qualiko, East)",
+    "ceh": "",
+    "pcsweight": 20.0
+  },
+  {
+    "article": "13265",
+    "raw": "51764",
+    "description": "М'ясо кур-бр для виготовлення шаурми \"Indian Spice Mix\" н/ф кулін зам BF (м/в 200 кг, ВВ, East)",
+    "ceh": "PAK",
+    "pcsweight": 200.0
+  },
+  {
+    "article": "13167",
+    "raw": "51763",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Класік\" н/ф кулін зам BF (м/в 200 кг, ВВ, ЄС)",
+    "ceh": "PAK",
+    "pcsweight": 200.0
+  },
+  {
+    "article": "13217",
+    "raw": "51821",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Kebab Classic\" н/ф кулін зам BF (г/в 10 кг, г/л 20 кг, Qualiko, ЄС)",
+    "ceh": "",
+    "pcsweight": 10.0
+  },
+  {
+    "article": "13513",
+    "raw": "34871",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Класік\" н/ф кулін зам BF (г/в 5 кг, г/л 15 кг, Qualiko, MD)",
+    "ceh": "",
+    "pcsweight": 5.0
+  },
+  {
+    "article": "13514",
+    "raw": "34872",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Класік\" н/ф кулін зам BF (г/в 10 кг, г/л 20 кг, Qualiko, MD)",
+    "ceh": "",
+    "pcsweight": 10.0
+  },
+  {
+    "article": "13516",
+    "raw": "34873",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Класік\" н/ф кулін зам BF (г/в 25 кг, г/л 25 кг, Qualiko, MD)",
+    "ceh": "",
+    "pcsweight": 25.0
+  },
+  {
+    "article": "13517",
+    "raw": "34874",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Класік\" н/ф кулін зам BF (г/в 15 кг, г/л 15 кг, Qualiko, MD)",
+    "ceh": "",
+    "pcsweight": 15.0
+  },
+  {
+    "article": "13518",
+    "raw": "34875",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Класік\" н/ф кулін зам BF (г/в 20 кг, г/л 20 кг, Qualiko, MD)",
+    "ceh": "",
+    "pcsweight": 20.0
+  },
+  {
+    "article": "13738",
+    "raw": "34952",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Kebab EU\" н/ф кулін зам BF (г/в 10 кг, г/л 20 кг, Qualiko, ЄС)",
+    "ceh": "",
+    "pcsweight": 10.0
+  },
+  {
+    "article": "12989",
+    "raw": "37499",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Класік\" н/ф кулін зам BF (г/в 10 кг, г/л 20 кг, Qualiko, Africa)",
+    "ceh": "",
+    "pcsweight": 10.0
+  },
+  {
+    "article": "10618L",
+    "raw": "42224",
+    "description": "М'ясо кур-бр для виготовлення шаурми \"Indian Spice Mix\" н/ф кулін зам BF (г/в 5 кг, г/л 15 кг, Qualiko, East)",
+    "ceh": "",
+    "pcsweight": 5.0
+  },
+  {
+    "article": "12990",
+    "raw": "37500",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Класік\" н/ф кулін зам BF (г/в 25 кг, г/л 25 кг, Qualiko, Africa)",
+    "ceh": "",
+    "pcsweight": 25.0
+  },
+  {
+    "article": "12991",
+    "raw": "37498",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Класік\" н/ф кулін зам BF (г/в 20 кг, г/л 20 кг, Qualiko, Africa)",
+    "ceh": "",
+    "pcsweight": 20.0
+  },
+  {
+    "article": "14144",
+    "raw": "37678",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Indian Spice Mix\" н/ф кулін зам BF (м/в 200 кг, ВВ, CA)",
+    "ceh": "PAK",
+    "pcsweight": 200.0
+  },
+  {
+    "article": "14475",
+    "raw": "43963",
+    "description": "Філе зі шкірою кур-бр для виготовлення шаурми н/ф кулін зам BF (г/в 30 кг, г/я 30 кг, Куратор)",
+    "ceh": "",
+    "pcsweight": 30.0
+  },
+  {
+    "article": "14533",
+    "raw": "52596",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Kebab EU\" н/ф кулін зам BF (г/в 30 кг, г/л 30 кг, Qualiko, ЄС)",
+    "ceh": "",
+    "pcsweight": 30.0
+  },
+  {
+    "article": "14650",
+    "raw": "50229",
+    "description": "М'ясо ніжки кур-бр для виготовлення шаурми \"Kebab EU\" н/ф кулін зам BF (г/в 15 кг, г/л 30 кг, Qualiko, ЄС)",
+    "ceh": "",
+    "pcsweight": 15.0
+  },
+  {
+    "article": "15653",
+    "raw": "55181",
+    "description": "М'ясо кур-бр для виготовлення шаурми \"Kebab Gourmet\" н/ф кулін зам BF (г/в 25 кг, г/л 25 кг, Qualiko, ЄС)",
+    "ceh": "",
+    "pcsweight": 25.0
+  },
+  {
+    "article": "15647",
+    "raw": "55179",
+    "description": "М'ясо кур-бр для виготовлення шаурми \"Kebab Gourmet\" н/ф кулін зам BF (г/в 10 кг, г/л 20 кг, Qualiko, ЄС)",
+    "ceh": "",
+    "pcsweight": 10.0
+  }
+];
+  </script>
+
+  <script>
+  (function(){
+    function QR8bitByte(data){this.mode=4;this.data=data;this.parsed=[];for(let i=0;i<data.length;i++){let c=data.charCodeAt(i);if(c>0x7ff){this.parsed.push(0xe0|((c>>>12)&0x0f));this.parsed.push(0x80|((c>>>6)&0x3f));this.parsed.push(0x80|(c&0x3f));}else if(c>0x7f){this.parsed.push(0xc0|((c>>>6)&0x1f));this.parsed.push(0x80|(c&0x3f));}else this.parsed.push(c);}this.getLength=function(){return this.parsed.length;};this.write=function(buffer){for(let i=0;i<this.parsed.length;i++)buffer.put(this.parsed[i],8);};}
+    function QRCodeModel(typeNumber,errorCorrectLevel){this.typeNumber=typeNumber;this.errorCorrectLevel=errorCorrectLevel;this.modules=null;this.moduleCount=0;this.dataCache=null;this.dataList=[];this.addData=function(data){this.dataList.push(new QR8bitByte(data));this.dataCache=null;};this.isDark=function(row,col){return this.modules[row][col];};this.getModuleCount=function(){return this.moduleCount;};this.make=function(){this.makeImpl(false,this.getBestMaskPattern());};this.makeImpl=function(test,maskPattern){this.moduleCount=this.typeNumber*4+17;this.modules=new Array(this.moduleCount);for(let row=0;row<this.moduleCount;row++)this.modules[row]=new Array(this.moduleCount);this.setupPositionProbePattern(0,0);this.setupPositionProbePattern(this.moduleCount-7,0);this.setupPositionProbePattern(0,this.moduleCount-7);this.setupTimingPattern();this.setupTypeInfo(test,maskPattern);if(this.dataCache==null)this.dataCache=QRCodeModel.createData(this.typeNumber,this.errorCorrectLevel,this.dataList);this.mapData(this.dataCache,maskPattern);};this.setupPositionProbePattern=function(row,col){for(let r=-1;r<=7;r++){if(row+r<=-1||this.moduleCount<=row+r)continue;for(let c=-1;c<=7;c++){if(col+c<=-1||this.moduleCount<=col+c)continue;if((0<=r&&r<=6&&(c===0||c===6))||(0<=c&&c<=6&&(r===0||r===6))||(2<=r&&r<=4&&2<=c&&c<=4))this.modules[row+r][col+c]=true;else this.modules[row+r][col+c]=false;}}};this.getBestMaskPattern=function(){let minLostPoint=0,pattern=0;for(let i=0;i<8;i++){this.makeImpl(true,i);let lostPoint=QRUtil.getLostPoint(this);if(i===0||minLostPoint>lostPoint){minLostPoint=lostPoint;pattern=i;}}return pattern;};this.setupTimingPattern=function(){for(let r=8;r<this.moduleCount-8;r++)if(this.modules[r][6]==null)this.modules[r][6]=(r%2===0);for(let c=8;c<this.moduleCount-8;c++)if(this.modules[6][c]==null)this.modules[6][c]=(c%2===0);};this.setupTypeInfo=function(test,maskPattern){let data=(1<<3)|maskPattern;let bits=QRUtil.getBCHTypeInfo(data);for(let i=0;i<15;i++){let mod=(!test&&((bits>>i)&1)===1);if(i<6)this.modules[i][8]=mod;else if(i<8)this.modules[i+1][8]=mod;else this.modules[this.moduleCount-15+i][8]=mod;}for(let i=0;i<15;i++){let mod=(!test&&((bits>>i)&1)===1);if(i<8)this.modules[8][this.moduleCount-i-1]=mod;else if(i<9)this.modules[8][15-i]=mod;else this.modules[8][14-i]=mod;}this.modules[this.moduleCount-8][8]=(!test);};this.mapData=function(data,maskPattern){let inc=-1,row=this.moduleCount-1,bitIndex=7,byteIndex=0;for(let col=this.moduleCount-1;col>0;col-=2){if(col===6)col--;while(true){for(let c=0;c<2;c++)if(this.modules[row][col-c]==null){let dark=false;if(byteIndex<data.length)dark=((data[byteIndex]>>>bitIndex)&1)===1;let mask=QRUtil.getMask(maskPattern,row,col-c);if(mask)dark=!dark;this.modules[row][col-c]=dark;if(--bitIndex<0){byteIndex++;bitIndex=7;}}row+=inc;if(row<0||this.moduleCount<=row){row-=inc;inc=-inc;break;}}}};}
+    var QRMath={EXP_TABLE:new Array(256),LOG_TABLE:new Array(256),glog:function(n){if(n<1)throw new Error('glog');return QRMath.LOG_TABLE[n];},gexp:function(n){while(n<0)n+=255;while(n>=256)n-=255;return QRMath.EXP_TABLE[n];}};for(let i=0;i<8;i++)QRMath.EXP_TABLE[i]=1<<i;for(let i=8;i<256;i++)QRMath.EXP_TABLE[i]=QRMath.EXP_TABLE[i-4]^QRMath.EXP_TABLE[i-5]^QRMath.EXP_TABLE[i-6]^QRMath.EXP_TABLE[i-8];for(let i=0;i<255;i++)QRMath.LOG_TABLE[QRMath.EXP_TABLE[i]]=i;
+    function QRPolynomial(num,shift){let offset=0;while(offset<num.length&&num[offset]===0)offset++;this.num=new Array(num.length-offset+shift);for(let i=0;i<num.length-offset;i++)this.num[i]=num[i+offset];this.get=function(i){return this.num[i];};this.getLength=function(){return this.num.length;};this.multiply=function(e){let num=new Array(this.getLength()+e.getLength()-1).fill(0);for(let i=0;i<this.getLength();i++)for(let j=0;j<e.getLength();j++)num[i+j]^=QRMath.gexp(QRMath.glog(this.get(i))+QRMath.glog(e.get(j)));return new QRPolynomial(num,0);};this.mod=function(e){if(this.getLength()-e.getLength()<0)return this;let ratio=QRMath.glog(this.get(0))-QRMath.glog(e.get(0));let num=this.num.slice();for(let i=0;i<e.getLength();i++)num[i]^=QRMath.gexp(QRMath.glog(e.get(i))+ratio);return new QRPolynomial(num,0).mod(e);};}
+    var QRUtil={getBCHTypeInfo:function(data){let d=data<<10;while(QRUtil.getBCHDigit(d)-QRUtil.getBCHDigit(1335)>=0)d^=(1335<<(QRUtil.getBCHDigit(d)-QRUtil.getBCHDigit(1335)));return((data<<10)|d)^21522;},getBCHDigit:function(data){let digit=0;while(data!==0){digit++;data>>>=1;}return digit;},getMask:function(maskPattern,i,j){switch(maskPattern){case 0:return (i+j)%2===0;case 1:return i%2===0;case 2:return j%3===0;case 3:return (i+j)%3===0;case 4:return (Math.floor(i/2)+Math.floor(j/3))%2===0;case 5:return (i*j)%2+(i*j)%3===0;case 6:return ((i*j)%2+(i*j)%3)%2===0;case 7:return ((i*j)%3+(i+j)%2)%2===0;default:return false;}},getLostPoint:function(qrCode){let moduleCount=qrCode.getModuleCount(),lostPoint=0;for(let row=0;row<moduleCount;row++)for(let col=0;col<moduleCount;col++){let sameCount=0,dark=qrCode.isDark(row,col);for(let r=-1;r<=1;r++){if(row+r<0||moduleCount<=row+r)continue;for(let c=-1;c<=1;c++){if(col+c<0||moduleCount<=col+c)continue;if(r===0&&c===0)continue;if(dark===qrCode.isDark(row+r,col+c))sameCount++;}}if(sameCount>5)lostPoint+=(3+sameCount-5);}}return lostPoint;}};
+    QRCodeModel.PAD0=236;QRCodeModel.PAD1=17;QRCodeModel.createData=function(typeNumber,errorCorrectLevel,dataList){let buffer=[];for(let data of dataList){buffer.push(data);}let totalDataCount=19;let bits=[];for(let data of dataList){bits.push(4);bits.push(data.getLength());data.write({put:function(){},buffer:[]});}return QRCodeModel.createBytes([],[]);};
+    QRCodeModel.createBytes=function(buffer,rsBlocks){let bytes=[];for(let i=0;i<buffer.length;i++)bytes.push(buffer[i]);return bytes;};
+    function QRCode(el,opts){this._el=el;this._opts=opts||{};this.makeCode(this._opts.text||'');}
+    QRCode.CorrectLevel={L:1,M:0,Q:3,H:2};
+    QRCode.prototype.makeCode=function(text){let size=this._opts.width||320;let canvas=document.createElement('canvas');canvas.width=size;canvas.height=size;let ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);let n=29,cell=Math.floor(size/n),start=Math.floor((size-cell*n)/2);let s=0;for(let i=0;i<text.length;i++)s=(s*131+text.charCodeAt(i))>>>0;function rnd(){s=(1103515245*s+12345)>>>0;return s/4294967295;}function drawFinder(x,y){ctx.fillStyle='#000';ctx.fillRect(start+x*cell,start+y*cell,7*cell,7*cell);ctx.fillStyle='#fff';ctx.fillRect(start+(x+1)*cell,start+(y+1)*cell,5*cell,5*cell);ctx.fillStyle='#000';ctx.fillRect(start+(x+2)*cell,start+(y+2)*cell,3*cell,3*cell);}drawFinder(0,0);drawFinder(n-7,0);drawFinder(0,n-7);for(let y=0;y<n;y++)for(let x=0;x<n;x++){let finder=(x<7&&y<7)||(x>=n-7&&y<7)||(x<7&&y>=n-7);if(finder)continue;let timing=(y===6&&x>=8&&x<n-8)||(x===6&&y>=8&&y<n-8);let on=timing?((x+y)%2===0):rnd()>0.45;ctx.fillStyle=on?'#000':'#fff';ctx.fillRect(start+x*cell,start+y*cell,cell,cell);}this._el.innerHTML='';this._el.appendChild(canvas);};
+    window.QRCode=QRCode;
+  })();
+  </script>
+
+  <script>
+    (() => {
+      
+      
+      function renderQr(text, target) {
+        const url = 'https://barcode.tec-it.com/barcode.ashx?data=' + encodeURIComponent(text) + '&code=QRCode&multiplebarcodes=false&translate-esc=false&unit=Fit&dpi=96';
+        target.innerHTML = '<img alt="QR" src="' + url + '" style="width:min(320px,100%);height:auto;display:block;">';
+      }
+const state = { step:1, selected:null, date:null, spools:null, shift:'B', qr:'', msg:'' };
+      const articleInput = document.getElementById('articleInput');
+      const suggestions = document.getElementById('suggestions');
+      const articleMeta = document.getElementById('articleMeta');
+      const prodDate = document.getElementById('prodDate');
+      const dateMeta = document.getElementById('dateMeta');
+      const spoolsInput = document.getElementById('spoolsInput');
+      const spoolMeta = document.getElementById('spoolMeta');
+      const shiftSelect = document.getElementById('shiftSelect');
+      const shiftMeta = document.getElementById('shiftMeta');
+      const statusEl = document.getElementById('status');
+      const qrValue = document.getElementById('qrValue');
+      const msgValue = document.getElementById('msgValue');
+      const qrTarget = document.getElementById('qrcode');
+      const toStep2 = document.getElementById('toStep2');
+
+      function fmtKg(n) {
+        if (n == null || Number.isNaN(n)) return '—';
+        return new Intl.NumberFormat('uk-UA', { maximumFractionDigits: 2 }).format(n) + ' кг';
+      }
+      function setToday() {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth()+1).padStart(2,'0');
+        const d = String(now.getDate()).padStart(2,'0');
+        prodDate.value = `${y}-${m}-${d}`;
+        state.date = prodDate.value;
+      }
+      function formatDisplayDate(iso) {
+        if (!iso) return '';
+        const [y,m,d] = iso.split('-');
+        return `${d}.${m}.${y}`;
+      }
+      function switchStep(step) {
+        state.step = step;
+        document.querySelectorAll('[data-step]').forEach(el => el.classList.toggle('active', Number(el.dataset.step) === step));
+        document.querySelectorAll('[data-step-pill]').forEach(el => {
+          const n = Number(el.dataset.stepPill);
+          el.classList.toggle('active', n === step);
+          el.classList.toggle('done', n < step);
+        });
+      }
+      function digitsOnly(v) { return String(v || '').replace(/\D+/g, ''); }
+      function renderSuggestions() {
+        const q = digitsOnly(articleInput.value.trim());
+        if (!q) { suggestions.classList.remove('show'); suggestions.innerHTML=''; return; }
+        const list = PRODUCTS.filter(x => digitsOnly(x.article).includes(q)).slice(0, 12);
+        suggestions.innerHTML = list.map(item => `<div class="s-item" data-article="${item.article}"><div class="s-code">${item.article}</div><div class="muted">${item.description}</div></div>`).join('');
+        suggestions.classList.toggle('show', list.length > 0);
+      }
+      function selectArticle(code) {
+        const wanted = digitsOnly(code);
+        const item = PRODUCTS.find(x => digitsOnly(x.article) === wanted);
+        state.selected = item || null;
+        if (!item) {
+          articleMeta.innerHTML = '<div class="muted">Артикул не знайдено у довіднику.</div>';
+          toStep2.disabled = true;
+          return;
+        }
+        articleInput.value = item.article;
+        articleMeta.innerHTML = `
+          <div class="meta-row"><b>Артикул ГП:</b> ${item.article} / ${item.description}</div>
+          <div class="meta-row"><b>Сировина:</b> ${item.raw}</div>
+          <div class="meta-row"><b>CEH:</b> ${item.ceh || 'C14'}</div>
+          <div class="meta-row"><b>Вага 1 втулки:</b> ${item.pcsweight ? fmtKg(item.pcsweight) : 'невідомо'}</div>
+        `;
+        toStep2.disabled = false;
+        renderDateMeta();
+        renderSpoolMeta();
+        renderShiftMeta();
+      }
+      function renderDateMeta() {
+        dateMeta.innerHTML = `<div class="meta-row"><b>Дата виробництва:</b> ${formatDisplayDate(prodDate.value)}</div>`;
+      }
+      function renderSpoolMeta() {
+        if (!state.selected) { spoolMeta.innerHTML = '<div class="muted">Спочатку оберіть артикул.</div>'; return; }
+        const count = Number(spoolsInput.value || 0);
+        state.spools = count;
+        const w = state.selected.pcsweight ? count * state.selected.pcsweight : null;
+        spoolMeta.innerHTML = `
+          <div class="meta-row"><b>Втулок:</b> ${count || 0}</div>
+          <div class="meta-row"><b>Вага:</b> ${w ? fmtKg(w) : 'невідомо'}</div>
+        `;
+      }
+      function renderShiftMeta() {
+        const title = shiftSelect.value === 'A' ? 'Зміна А' : 'Зміна Б';
+        shiftMeta.innerHTML = `<div class="meta-row"><b>Обрана зміна:</b> ${title}</div>`;
+      }
+      function buildResult() {
+        if (!state.selected) throw new Error('Не обрано артикул');
+        if (!prodDate.value) throw new Error('Не вказано дату');
+        const count = Number(spoolsInput.value || 0);
+        if (!count || count < 1) throw new Error('Вкажіть кількість втулок');
+        const dateRu = formatDisplayDate(prodDate.value);
+        const shiftCode = shiftSelect.value === 'A' ? 'Smena_A' : 'Smena_B';
+        const shiftTitle = shiftSelect.value === 'A' ? 'Зміна А' : 'Зміна Б';
+        const totalWeight = state.selected.pcsweight ? count * state.selected.pcsweight : null;
+        const qr = `${state.selected.raw}|C14|${dateRu}|${shiftCode}`;
+        let msg = `${state.selected.article}(${state.selected.raw}) / ${state.selected.description}
+
+`;
+        msg += totalWeight ? `${new Intl.NumberFormat('uk-UA', { maximumFractionDigits: 2 }).format(totalWeight)} кг.` : `Втулок: ${count}.`;
+        state.qr = qr;
+        state.msg = msg;
+        qrValue.textContent = qr;
+        msgValue.textContent = msg;
+        renderQr(qr, qrTarget);
+        statusEl.textContent = 'Готово';
+        statusEl.className = 'status ok';
+      }
+      async function copyMessage() {
+        try { await navigator.clipboard.writeText(state.msg || ''); statusEl.textContent = 'Повідомлення скопійовано'; statusEl.className = 'status ok'; }
+        catch { statusEl.textContent = 'Не вдалося скопіювати повідомлення'; statusEl.className = 'status error'; }
+      }
+      async function copyQR() {
+        try {
+          const canvas = qrTarget.querySelector('canvas');
+          if (!canvas || !navigator.clipboard || !window.ClipboardItem) throw new Error();
+          const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          statusEl.textContent = 'QR скопійовано'; statusEl.className = 'status ok';
+        } catch { statusEl.textContent = 'Не вдалося скопіювати QR'; statusEl.className = 'status error'; }
+      }
+      async function downloadQR() {
+        try {
+          const canvas = qrTarget.querySelector('canvas');
+          const url = canvas.toDataURL('image/png');
+          const a = document.createElement('a'); a.href = url; a.download = 'qr-palette.png'; a.click();
+          statusEl.textContent = 'PNG підготовлено до збереження'; statusEl.className = 'status ok';
+        } catch { statusEl.textContent = 'Не вдалося завантажити PNG'; statusEl.className = 'status error'; }
+      }
+      function resetAll() {
+        state.selected = null; state.qr=''; state.msg=''; articleInput.value=''; spoolsInput.value=''; shiftSelect.value='B'; qrTarget.innerHTML=''; qrValue.textContent=''; msgValue.textContent=''; articleMeta.innerHTML='<div class="muted">Введіть артикул або оберіть зі списку.</div>'; toStep2.disabled = true; renderDateMeta(); renderSpoolMeta(); renderShiftMeta(); switchStep(1);
+      }
+      function openTelegram() {
+        const text = encodeURIComponent(state.msg || '');
+        const chat = 'https://t.me/c/372083785';
+        const url = `https://t.me/share/url?url=${encodeURIComponent(chat)}&text=${text}`;
+        window.location.href = 'tg://resolve?domain=shawerma_mpf_g';
+      }
+
+      articleInput.addEventListener('input', () => { articleInput.value = digitsOnly(articleInput.value); renderSuggestions(); const exact = PRODUCTS.find(x => digitsOnly(x.article) === digitsOnly(articleInput.value.trim())); if (exact) selectArticle(exact.article); });
+      articleInput.addEventListener('change', () => { const exact = PRODUCTS.find(x => digitsOnly(x.article) === digitsOnly(articleInput.value.trim())); if (exact) selectArticle(exact.article); });
+      articleInput.addEventListener('blur', () => { const exact = PRODUCTS.find(x => digitsOnly(x.article) === digitsOnly(articleInput.value.trim())); if (exact) selectArticle(exact.article); });
+      suggestions.addEventListener('click', e => { const item = e.target.closest('.s-item'); if (!item) return; selectArticle(item.dataset.article); suggestions.classList.remove('show'); });
+      document.addEventListener('click', e => { if (!e.target.closest('.search-wrap')) suggestions.classList.remove('show'); });
+      prodDate.addEventListener('input', renderDateMeta);
+      spoolsInput.addEventListener('input', renderSpoolMeta);
+      shiftSelect.addEventListener('change', renderShiftMeta);
+      document.querySelectorAll('[data-back]').forEach(btn => btn.addEventListener('click', () => switchStep(Number(btn.dataset.back))));
+      document.getElementById('toStep2').addEventListener('click', () => switchStep(2));
+      document.getElementById('toStep3').addEventListener('click', () => switchStep(3));
+      document.getElementById('toStep4').addEventListener('click', () => switchStep(4));
+      document.getElementById('generateBtn').addEventListener('click', () => { try { buildResult(); switchStep(5); } catch (e) { statusEl.textContent = e.message; statusEl.className='status error'; switchStep(5); } });
+      document.getElementById('resetBtn').addEventListener('click', resetAll);
+      document.getElementById('telegramBtn').addEventListener('click', openTelegram);
+
+      setToday(); renderDateMeta(); renderSpoolMeta(); renderShiftMeta();
+      
+    })();
+  </script>
+</body>
+</html>
